@@ -1,21 +1,32 @@
 \section{Introduction}
 
-The human brain is the subject of intense research and, in particular, the
-construction of large-scale models of brain function continues to be an
-important part of this. These models essentially consist of a directed graph of
-`neurons' (with simple, well defined behaviour) which communicate with connected
-neurons by transmitting valueless `spikes'. Models built in this way, such as
-`Spaun' \cite{eliasmith12}, are capable of reproducing high- and low-level
-properties of the human brain such as recognising digits and solving logical
-problems. As models grow in scale to human scales of tens of billions of neurons
-\cite{williams88} each with thousands of outgoing connections \cite{kung88},
-models have proven slow to run and so specialised computer architectures have
-been developed. These machines combine often unconventional processing elements
-with specialised interconnection networks. It is the enhancement of these
-interconnection networks which forms the basis of this project. In this work,
-the `SpiNNaker' \cite{furber07} neural simulator will be used as a platform for
-experimental work thanks to its accessibility and flexibility.
+The human brain is the subject of intense research, a significant portion of
+which relies on simulations of large-scale models of the brain. Due to the
+unusual computational requirements of these simulations, numerous specialised
+hardware platforms have been developed to cope
+\cite{furber07,moore12,maguire07,choudhary12,misra10}. This project will focus
+on the interconnection networks within such systems, in particular on network
+topology and power management.
 
+Neural models of the brain typically consist of a directed graph of `neurons'
+with simple, well defined behaviours and which communicate by sending `spikes'
+to their neighbours. The only significant features of a spike are its origin and
+time of arrival. Such models have been demonstrated to reproduce high-level
+cognitive behaviours such as problem solving and memory \cite{eliasmith12}. 
+
+Conventional super computer interconnection networks are poorly suited to human
+scale models containing tens of billions of neurons \cite{williams88} each with
+thousands of connections \cite{kung88}. These networks are designed to handle
+the transmission of large blocks of data to a limited set of destinations, in
+sharp contrast with neural simulation requirements. A spike may be sent to
+thousands of destinations and requires only an origin ID and timestamp to be
+transmitted. In realtime simulations a timestamp is not required though maximum
+latency must be strictly limited. Due to this mismatch, alternative technologies
+are popular in neural simulators. Recent systems, such as SpiNNaker
+\cite{furber07} and Bluehive \cite{moore12}, have begun to incorporate
+super-computer style interconnect to benefit from increased speed at the expense
+of power. It is here that this project hopes to contribute to a new generation
+of power efficient interconnection network.
 
 \section{SpiNNaker}
 	
@@ -28,32 +39,33 @@ experimental work thanks to its accessibility and flexibility.
 	\end{figure}
 	
 	SpiNNaker is a hardware platform which combines low-power mobile-phone grade
-	CPU cores interconnected by a custom, high-performance interconnection network
-	to simulate large networks of neurons in real-time. The largest planned
-	machine, which is in the final stages of manufacturing, is designed to
-	simulate one billion ($10^9$) neurons in biological realtime
-	\cite{navaridas09} and will fill ten server-room cabinets as described in
-	figure \ref{fig:spinnaker-abstractions}.
+	CPU cores using a custom, high-performance interconnection network to simulate
+	large networks of neurons in realtime. The largest planned machine, which is
+	in the final stages of manufacturing, is designed to simulate one billion
+	($10^9$) neurons in biological realtime \cite{navaridas09} and will fill ten
+	server-room cabinets as described in figure \ref{fig:spinnaker-abstractions}.
 	
 	Between chips on the same board asynchronous, parallel signalling is used with
 	groups of 16 wires required to communicate data between neighbouring chips
 	\cite{bainbridge02}. This technique only consumes energy when the link is in
-	use. Between different boards, connecting this many wires would be
-	prohibitively expensive and so a different technology, High-Speed Serial
-	(HSS), is used \cite{athavale05}. HSS links can support high bandwidths and in
+	use. Connecting this many wires between different boards would be
+	prohibitively expensive so a different technology, High-Speed Serial (HSS), is
+	used \cite{athavale05}. HSS links can support high bandwidths and in
 	SpiNNaker, one board-to-board HSS link carries the load of eight asynchronous
 	links.  Unfortunately, HSS links consume energy at the same rate when loaded
 	and idle; to reduce power the links must be operated at a lower speed.
 	
-	In `spikes' are produced by neurons at unpredictable rates, it is hard to
-	determine exactly how fast such a link must operate ahead of time.  In
-	conventional applications, HSS links change speed dynamically depending on
-	load \cite{infinibandta08} however, for neural simulations operating at
-	biological real-time, the 1 ms pause introduced during link speed changes
-	\cite{xilinx14} would cause the simulation to fail. As a result in the current
-	generation of neural simulators using HSS, links operate at full speed at all
-	times.
+	In conventional HSS applications, links change speed dynamically depending on
+	load \cite{infinibandta08} to cope with unpredictable traffic patterns as in
+	neural simulations. Unfortunately, during link speed changes, HSS links become
+	non-operational for around 1 ms \cite{xilinx14}. To maintain realtime
+	performance in SpiNNaker, the maximum latency for a spike traversing the
+	network is also around 1 ms making delays during link speed changes
+	unacceptable. Because of this HSS links in SpiNNaker and other simulators are
+	operated at full speed at all times despite average network loads of between
+	5\% and 10\% \cite{moore12,navaridas09} link capacity.
 	
+	% XXX Why are the project goals being introduced as new again?
 	This project hopes to develop a new architecture for neural simulator
 	interconnection networks which both allows link speed changes without breaking
 	simulations and while also further reducing the network load. Since
@@ -73,8 +85,8 @@ experimental work thanks to its accessibility and flexibility.
 		novel hardware-accelerated modelling of computer architectures. The result
 		demonstrated a strong correspondence between the simulator and SpiNNaker
 		indicating its suitability for use in the development of improvements to
-		SpiNNaker's interconnect. This work is due for journal submission in early
-		September.
+		SpiNNaker's interconnect. This work is being prepared for journal submission
+		in early September.
 	
 	\subsection{Wiring large systems with small-world connectivity}
 		
@@ -86,50 +98,56 @@ experimental work thanks to its accessibility and flexibility.
 			eighteen core SpiNNaker chip. Links at the edges of the network
 			wrap-around to connect to those on the other side. Actual networks are
 			much larger.}
-			\label{fig:spin-topology}
+			\label{fig:spinn-topology}
 		\end{figure}
 		
 		HSS technology imposes constraints on the lengths of wires used in large
-		systems, for example in SpiNNaker, wires are limited to around 1 metre or
+		systems; for example in SpiNNaker, wires are limited to around 1 metre or
 		less \cite{sata3spec}. SpiNNaker's network uses a 2D hexagonal torus
 		topology (illustrated in figure \ref{fig:spinn-topology}) which, if laid out
-		naively, would require cables long enough to physically span the whole
-		system. For the large machine in figure \ref{fig:spinnaker-abstractions},
-		this would be over 6 metres. Preliminary work has developed a tool to aid
-		the design of alternative physical organisations of SpiNNaker machines (such
-		as in the figure) which maintain the same logical connectivity but use wires
-		of less than a metre in length.
+		na\"ively, would require cables long enough to span the whole system. For
+		the large machine in figure \ref{fig:spinnaker-abstractions}, this would be
+		over 6 metres. Preliminary work has developed a tool to aid the design of
+		alternative physical organisations of SpiNNaker machines (such as in the
+		figure) which maintain the same logical connectivity but use wires of less
+		than a metre.
 		
 		Watts and Strogatz demonstrated that adding a small number of random links
 		to a torus topology can convert it into a `small-world' network
-		\cite{watts98}. A well-known example of a small-world network is human
-		social networks where one of their most distinctive properties is widely
-		known as the theory of `six degrees of separation'. This states that any two
-		people are connected by a chain of no more than six acquaintances. This
-		property is also desirable in computer networks since it reduces the number
-		of `hops' messages must make when travelling through a network. This reduces
-		both the latency of messages and also frees up resources on links which are
-		avoided \cite{shin11}. This freeing of resources enables the network to
-		operate at lower speeds and thus lower power.
+		\cite{watts98}. A well-known example of a small-world network is the human
+		social network where the idea is popularly know as the theory of `six
+		degrees of separation'. The theory states that any two people are connected
+		by a chain of no more than six acquaintances. This property is also
+		desirable in computer networks since it reduces the maximum and average
+		number of `hops' messages must make when travelling through a network. This
+		reduces both the latency of messages and also frees up resources on links
+		\cite{shin11}. This freeing of resources enables the network to operate at
+		lower speeds and thus lower power.
 		
 		Random links added to a network can easily require wires longer than a metre
 		and allowing only short random connections was found to prevent the
 		small-world effect from occurring. However, when systems were laid out to
-		reduce wire lengths, as in the scheme proposed for SpiNNaker, small-world
-		networks formed even when only allowing physically short random connections.
+		reduce wire lengths logically distant boards become physically close. This
+		means that even short cables can create logically long connections.
 	
 	
 	\subsection{High-speed serial (HSS)}
 		
 		Preliminary work has also resulted in the development of foundational
 		hardware components for implementing new connectivity schemes within
-		SpiNNaker's board-to-board interconnect. A proof of concept system has been
-		produced to demonstrate these hardware components which has enabled an
-		order-of-magnitude bandwidth increase between an external host PC and
-		SpiNNaker for certain neural workloads.
+		SpiNNaker's board-to-board interconnect. These components include a crossbar
+		switch \cite{dally04} which allows spikes to be selectively redirected along
+		links and interfaces for connecting links operating at different speeds.
+		These components will be built upon during upcoming work.
 		
-		These foundational components will be used in upcoming work to extend
-		SpiNNaker's board-to-board interconnect.
+		A proof of concept system was produced to demonstrate these components which
+		connects SpiNNaker to a host PC using unused HSS connections. This prototype
+		is intended to replace an existing Ethernet connection to SpiNNaker (which
+		is out of the scope of this report) used for system management and
+		interaction with neural models. Though the prototype link operates at a
+		fraction of the maximum speed of an HSS link, it has achieved an
+		order-of-magnitude improvement in host bandwidth for certain neural loads
+		since it bypasses a software bottleneck in the Ethernet connectivity.
 
 
 \section{Research plan}
@@ -138,40 +156,39 @@ experimental work thanks to its accessibility and flexibility.
 		\center
 		\input{figures/plan-gantt}
 		
-		\caption{Gantt chart overview of research plan. Boxes indicate expected
+		\caption{Gantt chart overview of research plan. Boxes indicate the expected
 		duration of a task, thick lines indicate slack and red arrows show
 		dependencies between tasks. Note the non-linear scale.}
 		\label{fig:plan-gantt}
 	\end{figure}
 	
-	An outline of planned upcoming research is given in figure
-	\ref{fig:plan-gantt}. The major components of this plan are outlined in this
-	section.
+	An outline of planned research is given in figure \ref{fig:plan-gantt}. The
+	major components of this plan are outlined in this section.
 	
 	\subsection{Benchmarking}
 		
-		In order to assess success, a suite of benchmarks is required. A method of
+		To assess success, a suite of benchmarks is required. A method of
 		automatically converting both models developed by neuroscientists and a
 		number of synthetic tests for the Neural Engineering Framework (NEF)
 		\cite{eliasmith04} into benchmarks has been proposed. This approach ensures
-		that the benchmarks will be representative of realistic neural loads while
-		also allowing systematic experimentation and exploration of corner cases.
+		that the benchmarks will represent realistic neural loads while also
+		allowing systematic experimentation and exploration of corner cases.
 	
 	\subsection{Small-world}
 		
 		Building on preliminary work, models of small world configurations in
 		SpiNNaker's network will be modelled and, if found to be effective,
-		implementation in SpiNNaker's network will follow. The most significant open
-		problem to be solved is the determination of the complexity of routing
-		strategy required to usefully exploit small-world connections.
+		implementation will follow. The most significant open problem to be solved
+		is the determination of the complexity of routing strategy required to
+		exploit small-world connections.
 	
 	\subsection{HSS power management}
 		
 		As described earlier, HSS systems present an energy efficiently challenge
 		for neural loads due to their load-independent energy consumption and slow
 		link speed changes. This work focuses on reducing the time HSS links are
-		unavailable during link speed changes making it possible to dynamically
-		change link speeds in response to system load. With this in place, the
+		unavailable during link speed changes making it possible to change link
+		speeds dynamically in response to system load. With this in place, the
 		reduction in network load yielded by small-world connectivity can be
 		exploited to also reduce energy consumption.
 		
@@ -180,16 +197,16 @@ experimental work thanks to its accessibility and flexibility.
 			\input{figures/emergency-routing}
 			
 			\caption{Connectivity between boards (circles) in a SpiNNaker system. A
-			transitioning link is avoided by traversing two neighbouring links.
-			Wrap-around links are not shown.}
+			link undergoing a speed change is avoided by traversing two neighbouring
+			links.  Wrap-around links are not shown.}
 			\label{fig:emergency-routing}
 		\end{figure}
 		
-		Two complementary approaches are being considered, the first involves
+		Two complementary approaches are being considered: the first involves
 		transmitting data redundantly while a link is changing speed. During speed
 		changes, the link becomes unreliable; existing systems simply wait until the
-		link stabilises at the expense of latency in order to avoid adding
-		additional hardware for this special case. In the proposed system, redundant
+		link stabilises at the expense of latency To avoid adding additional
+		hardware for this special case. In the proposed system, redundant
 		transmission of data during link speed changes will be used. One possibility
 		is the use of Forward Error Correction (FEC) \cite{hamming50} which allows
 		errors to be corrected inexpensively. The second approach is to redirect
